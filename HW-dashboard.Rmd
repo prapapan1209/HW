@@ -1,0 +1,158 @@
+---
+title: "Inequality in Education"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+runtime: shiny
+---
+Page1
+=============================================
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(shiny)
+library(tidyverse)
+library(plotly)
+```
+
+Columns
+------------------------------------------------------------------------
+### คะแนนผลสัมฤทธิ์เฉลี่ยในภาพรวม (เต็ม 10 คะแนน)
+    
+```{r}
+valueBox("5.68", icon = "fa-thumbs-o-up")
+```
+
+### จำนวนนักเรียนชาย
+
+```{r}
+valueBox("49.37%", icon = "fa-star",color="success")
+```   
+
+### จำนวนนักเรียนหญิง
+
+```{r}
+valueBox("50.63%", icon = "fa-star",color="info")
+```   
+
+Columns
+------------------------------------------------------------------------
+### จำนวนนักเรียนที่มีเศรษฐานะต่ำในภาพรวม
+```{r}
+gauge("70.8", min = 0, max = 100, symbol = '%',label = "Poor", gaugeSectors(
+  success = c(0, 10), warning = c(40, 50), danger = c(70, 100)
+))
+```
+
+### จำนวนนักเรียนที่มีเศรษฐานะปานกลางในภาพรวม
+```{r}
+gauge("20.6", min = 0, max = 100, symbol = '%',label = "Medium", gaugeSectors(
+  success = c(80, 100), warning = c(0, 25), danger = c(25,70)
+))
+```
+
+### จำนวนนักเรียนที่มีเศรษฐานะสูงในภาพรวม
+```{r}
+gauge("8.6", min = 0, max = 100, symbol = '%',label = "Rich", gaugeSectors(
+  success = c(0, 10), warning = c(40, 79), danger = c(15, 39)
+))
+``` 
+
+```{r data}
+data<-read.csv("new_ex.csv")
+h<-read.csv("high_ex.csv")
+l<-read.csv("low_ex.csv")
+
+update.h<-reactive(h%>%drop_na(!!!rlang::syms(input$stu.high)))
+                   
+update.l<-reactive(l%>%drop_na(!!!rlang::syms(input$stu.low)))
+
+```
+
+Columns {.sidebar}
+-----------------------------------------------------------------------
+
+```{r}
+selectInput("stu.high",label="High Score Student in School:",
+            choices=names(h))
+
+selectInput("stu.low",label="Low Score Student in School:",
+            choices=names(l))
+```
+
+Column {data-width=400}
+-----------------------------------------------------------------------
+
+### สัดส่วนเศรษฐานะของนักเรียนที่มีคะแนนผลสัมฤทธิ์สูงแบ่งตามโรงเรียน
+
+```{r}
+renderPlot({
+  update.h()%>%
+    ggplot(aes(x=!!rlang::sym(input$stu.high)))+
+    geom_bar(aes(fill=!!rlang::sym(input$stu.high)))+
+    theme_minimal()+
+    scale_x_discrete(limits =c("Poor","Medium","Rich"))
+})
+```
+Column {data-width=400}
+-----------------------------------------------------------------------
+
+### สัดส่วนเศรษฐานะของนักเรียนที่มีคะแนนผลสัมฤทธิ์ต่ำแบ่งตามโรงเรียน
+
+```{r}
+renderPlot({
+  update.l()%>%
+    ggplot(aes(x=!!rlang::sym(input$stu.low)))+
+    geom_bar(aes(fill=!!rlang::sym(input$stu.low)))+
+    theme_minimal()+
+    scale_x_discrete(limits =c("Poor","Medium","Rich"))
+})
+```
+
+Page2 
+==================================================================
+
+```{r}
+dat <- read.csv("example_data.csv")
+dat2 <- read.csv("example data-SID.csv")
+dat3 <- read.csv("example data-GENDER.csv")
+colnames(dat3)[1] <- "SID"
+```
+
+Row {data-height=700}
+-----------------------------------------------------------------------
+### ความสัมพันธ์ระหว่างเศรษฐานะกับคะแนนผลสัมฤทธิ์ภาพรวม 
+This scatter plot shows relation between SOC and ACH_M3.
+```{r,include=F}
+p2 <- dat2 %>% ggplot(aes(x=mean.ACH_M3,y=mean.SOC,color=n)) + 
+          geom_point(size=dat2$n/30,alpha=0.5) + 
+          geom_text(aes(label=SID),hjust=-0.35, vjust=-0.35)
+```
+
+```{r}
+p2
+```
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### จำนวนนักเรียนแต่ละโรงเรียน
+
+```{r}
+library(knitr)
+kable(dat3)
+```
+
+### สัดส่วนเศรษฐานะของนักเรียนในแต่ละโรงเรียน
+
+```{r}
+dat4 <- dat
+colnames(dat4)[4] <- "SOC"
+dat4$SOC<-as.factor(dat4$SOC)
+levels(dat4$SOC) <- c("Poor","Poor","Medium","Rich")
+
+dat4 %>% ggplot(aes(SID,fill=SOC))+
+ geom_bar(position="fill")+
+ coord_flip()
+```
+
